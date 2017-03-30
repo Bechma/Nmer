@@ -1,0 +1,558 @@
+﻿/*! \mainpage  genData
+ *
+\version v1
+\author  Juan F. Huete y Carlos Cano
+
+\tableofcontents
+
+\section NOTA NOTA IMPORTANTE
+Esta práctica es individual, por lo que el alumno debe incluir una nota en la misma indicando que no ha utilizado material de otros compañeros o compañeras para su resolución.
+
+En esta práctica deben serguirse los principios de compilación separada para las clases que no utilicen templates. 
+
+El alumno podrá dotar al tipo de dato de otros métodos que considere necesarios para la correcta realización de la práctica, pero debe respetar escrupulosamente la cabecera de los métodos detallados en este documento.
+
+
+\section generar Generar Documentación 
+
+La práctica se entrega con un fichero pdf que contiene toda documentación así como un fichero .zip que contiene todos los ficheros necesarios para su realización.  Al descomprimir el fichero nos encontraremos con un fichero Makefile y los siguientes directorios:
+
+\li bin  <-- Directorio de ejecutables
+\li datos  <-- Directorio donde se encuentran los ficheros de datos necesarios para la correcta ejecución de la misma
+\li doc   <-- Directorio para la documentación de la práctia
+\li include   <-- Donde se incluyen los ficheros cabecera .h, 
+\li lib  <-- Directorio de bibliotecas
+\li obj <-- Directorio de código objeto
+\li src  <-- Donde se localizan los fuentes
+
+
+Para generar la documentación es necesario ejecutar
+\code
+make documentacion
+\endcode
+
+como resultado tendremos que la documentación (en versión html) se generará en el directorio <tt>doc/html</tt> y en versión latex se genera en <tt>doc/latex</tt>.
+
+Para obtener el ejecutable podemos hacer
+
+\code
+make clean
+make
+\endcode
+que nos generá el ejecutable en el directorio <tt>bin</tt>,  que podremos ejecutar 
+\code
+cd bin
+./ejemploKtree
+\endcode
+
+\section intro_sec Introducción
+
+Un n-mer o n-grama se define como todas las posibles subcadenas de longitud n contenidas en una cadena [1]. En genética computacional, los n-mers son todas las posibles subsecuencias (de longitud igual a n) de una cadena de ADN (donde los nucleótidos posibles son A, G, C, T). El número máximo de n-mers diferentes de longitud n en una cadena de ADN será pues de 4^n. 
+
+El siguiente ejemplo muestra una lista de n-mers (para la longitud n especificada) obtenida de una secuencia de ADN: 
+\code
+Secuencia:     AGATCGAGTG
+3-mers: AGA GAT ATC TCG CGA GAG AGT GTG
+
+Secuencia :     GTAGAGCTGTAG
+5-mers: GTAGA TAGAG AGAGC GAGCT AGCTG GCTGT CTGTA TGTAG
+\endcode
+
+El conteo de n-mers para una secuencia de ADN es de especial interés en genética computacional porque estudios científicos muestran que estas distribuciones de n-mers caracterizan la especie a la que pertenece ese ADN (ver, por ejemplo, [2]). Es decir, a partir del conteo de n-mers de una secuencia de ADN dada (si la secuencia es lo bastante larga y el valor de n es suficientemente elevado), podríamos identificar la especie de la que procede ese ADN. 
+
+El problema del conteo de n-mers para una secuencia de ADN se puede definir como recontar cuántas veces aparece cada n-mer en la secuencia. En nuestro caso, nos interesará recontar cuántas veces aparece cada n-mer de longitud 1,2,...,n en la secuencia, es decir, para un valor dado de n, contaremos la frecuencia de sus 1-mers, 2-mers, 3-mers, ... , hasta n-mers. 
+El siguiente ejemplo muestra el conteo de n-mers de longitud 1 hasta 5 en una secuencia de ADN: 
+\code
+Secuencia :     GTAGAGCTGTAG
+1-mers: G:5 T:3 A:3 C:1
+2-mers: GT:2 TA:2 AG:3 GA:1 GC:1 CT:1 TG:1
+3-mers: GTA:2 TAG:2 AGA:1 GAG:1 AGC:1 GCT:1 CTG:1 TGT:1
+4-mers: GTAG:2 TAGA:1 AGAG:1 GAGC:1 AGCT:1 GCTG: 1 CTGT:1 TGTA:1
+5-mers: GTAGA:1 TAGAG:1 AGAGC:1 GAGCT:1 AGCTG:1 GCTGT:1 CTGTA:1 TGTAG:1
+\endcode
+
+
+En esta práctica proponemos que el estudiante desarrolle el TDA Nmer para realizar el conteo de n-mers de longitud 1,2,...,n para una secuencia dada de ADN (ver sección @ref Nmer). Para ello, el estudiante debe utilizar el TDA ktree (ver sección @ref ktreegen). Una vez programado, el TDA Nmer se aplicará a la resolución de un problema real de biología computacional: se pondrán a disposición del estudiante secuencias reales de ADN de distintas especies, y el estudiante deberá determinar qué especies son más parecidas entre sí en base al recuento de los n-mers más frecuentes (ver sección @ref problemaBiologia).  
+
+
+\section Nmer Implementación del TDA Nmer.
+
+La primera tarea a la que se enfrenta el estudiante es la implementación del TDA Nmer. Su especificación se detalla a continuación: 
+
+
+\code
+class Nmer {
+  Nmer();
+  Nmer(const Nmer & a);
+
+  
+  void list_Nmer( ) const; // lista todos los Nmer del árbol siguiendo un recorrido en preorden;
+
+  unsigned int length() const; // Devuelve la longitud máxima de los Nmers almacenados
+
+  size_type size() const; // Devuelve el número de Nmers distintos almacenados
+
+  Nmer &  operator=(const Nmer & a);  // operador de asignacion
+
+  Nmer Prefix(string adn); // Devuelve el Nmer (subarbol) asociado a un prefijo. Por ejemplo, si adn es "ACT", devuelve el Nmer que representa todas las subcadenas que empiezan por "ACT" (ACT*)
+
+  Nmer union(const Nmer reference);// Se devuelve un Nmer donde para cada nodo (representa una secuencia) se computa la suma de las frecuencias en *this y en referencia, 
+
+  bool containsString(const string adn) const; // Devuelve true si la cadena adn está representada en el árbol. 
+
+  bool included(const Nmer reference) const; // Devuelve true si cada nodo de *this está también representado en reference, es decir, si todas las secuencias representadas en el árbol de *this están también incluidas en reference. False en otro caso.
+
+  ...
+ 
+  //El resto de cabeceras se describe en otra sección de este documento: 
+
+  void sequenceADN(unsigned int l, const string & adn);  
+
+  bool loadSerialized(const string nombre_fichero);
+ 
+  float  Distance(const Nmer & x);
+
+  set<pair<string,int>,OrdenCre > rareNmer(int threshold); 
+
+  set<pair<string,int>,ordenDecre > commonNmer(int threshold);
+
+  set<pair<string,int>, ordenCrec > level(int l);
+
+  ...
+}
+\endcode
+
+El alumno podrá dotar al tipo de dato de otros métodos que considere necesarios para la correcta realización de la práctica, pero debe respetar escrupulosamente la cabecera de los métodos detallados anteriormente.
+
+Para la implementación del TDA Nmer debemos hacer uso de TDA ktree (ver sección @ref ktreegen).
+
+\section secKtree Árboles ktree
+
+Una de las desventajas de usar un vector o lista enlazada para almacenar datos es el tiempo necesario para buscar un elemento. Puesto que tanto vectores como  listas enlazadas son estructuras lineales, el tiempo requerido para buscar una lista "lineal" es proporcional al tamaño del conjunto de datos, esto es O(n). Una alternativa para resolver este problema es considerar un conjunto ordenado de elementos, pero igualmente ambas estructuras tienen comportamiento ineficiente cuando tenemos que abordar las tareas de inserción y borrado de elementos (O(n)).
+
+ Este comportamiento no es aceptable en el mundo de hoy, donde la velocidad a la que realizamos las operaciones es extremadamente importante. El tiempo es dinero. Por lo tanto, parece que se necesitan estructuras de datos mejores (más eficientes) para almacenar y buscar datos.
+
+En esta práctica analizaremos cómo una estructura de datos árbol nos puede ayudar a resolver algunos de nuestros problemas. Un árbol es una colección de nodos conectados formando una estructura jerárquica (y por tanto no lineal) donde para cada nodo  tiene un único padre y una lista de hijos. 
+
+En principio, un nodo puede tener un número indeterminado de hijos, hablamos de árboles generales, pero en esta práctica nos centraremos en el estudio de un tipo particular de árboles, que denominaremos ktree<T,K> y que tiene la siguiente características:
+
+
+\li Un nodo tiene entre 0 y k hijos, que se ubican en una posición dada por un índice, así hablamos del j-ésimo hijo, con 0<= j < k
+\li Por ser un árbol, cada nodo del mismo tiene un único padre.
+\li Que exista el hijo j-ésimo no implica que tengan que existir los hijos anteriores, esto es, si k = 10 puede ocurrir que un nodo tenga los hijos segundo, quinto y séptimo. El resto de sus descendientes pueden estar vacíos.
+
+\subsection tdaktree TDA ktree<T,K> 
+ Se ha diseñado un TDA ktree (la documentación está adjunta con esta práctica). El tipo ktree tiene dos parámetros plantilla, ktree<T,K>, donde T representa al tipo de dato que se almacena en el nodo y K es un entero que representa el número máximo de hijos que se permiten en cada nodo. Es constante para todo el tipo.
+
+Por ejemplo: 
+
+\code
+ktree<int,4> a; // árbol de enteros con 4 hijos como máximo
+ktree<string,7> b; // árbol de cadenas con 7 hijos como máximo
+ktree<int,2> c; //árbol de enteros con 2 hijos como máximo (es un árbol binario)
+\endcode
+
+Indicar que a y c pertenecen a tipos distintos, esto es ktree<int,4> es un tipo distinto de ktree<int,2>.
+
+
+Cuando trabajamos con el TDA ktree tenemos definidos los siguientes 
+\li ktree<T,K> -> Representa el árbol
+\li ktree<T,K>::node  -> Representa un nodo del árbol
+\li ktree<T,K>::const_node -> Representa un nodo constante del árbol (no podemos modificar su contenido)
+\li ktree<T,K>::node::child_iterator -> Iterador sobre los hijos (no nulos) de un nodo
+\li ktree<T,K>::const_node::child_iterator -> Iterador sobre los hijos (no nulos) de un nodo constante
+
+Así por ejemplo, la figura siguiente representa un ktree<char,5>
+
+\image html ktree_ejemplo.jpg
+\image latex ktree_ejemplo.pdf "Ejemplo de ktree" width=10cm
+
+
+\code
+ktree<char,5> arbol;
+ktree<char,5>::node n, nodo;
+n = arbol.root();
+cout << *n // Nos imprime A
+nodo = n.k_child(4); // <- Apunta al nodo con etiqueta D
+
+for (ktree<char,5>::node::child_iterator ith : n)
+  cout<< *(*ith) << endl; // <--  Imprime los hijos no nulos de n, esto es B,C,D
+                              //  *ith es el nodo hijo, *(*ith) es la etiqueta que hay dentro de dicho nodo.
+\endcode 
+
+
+Con el guión se entrega un código que ilustra el uso de ktree para distintos problemas (fichero <tt>ejemploKtree.cpp</tt>), como por ejemplo recorridos, cálculo de la altura de un ktree, inserción en un árbol binario de búsqueda representado mediante un ktree<int,2>, etc. 
+
+\include ejemploKtree.cpp
+
+Este código, una vez compilado, debe ejecutarse desde la carpeta <tt>bin</tt>: 
+
+\code
+cd bin 
+./ejemploKtree 
+\endcode
+
+\subsection implem Implementación
+
+Puesto que conocemos el número máximo de hijos de un nodo, fijo en todo momento, podemos acceder a ellos considerando un acceso aleatorio. Esto es consultar el hijo j-ésimo en orden constante. Para ello, se implementa un nodo  usando la siguiente estructura,
+
+\code
+struct celdaArbol {
+  T etiqueta;
+  celdaArbol * padre;
+  celdaArbol * hijos[K];
+};
+\endcode
+
+donde 
+\li etiqueta representa a la etiqueta almacenada en el nodo
+\li padre es un puntero a la celdaArbol que contiene al padre de dicho nodo
+\li hijos es un array de tamaño fijo, K, donde en cada posición almacenamos un puntero al hijo j-ésimo  (0<=j<K)  del nodo en el árbol
+
+Considerando esta información un árbol ktree se implementará como un puntero a la celda que contiene el nodo raíz del mismo. 
+
+\code
+template <typename T, int K> 
+class ktree {
+  public:
+   ktree();
+   ....
+  private:
+    celdaArbol * laraiz;
+};
+
+\endcode
+
+Como hemos comentado el TDA ktree contiene los siguientes tipos definidos
+
+\li ktree<T,K>::node  -> Representa un nodo del árbol
+\li ktree<T;K>::const_node -> Representa un nodo constante (no podemos modificar su contenido) en el árbol
+
+Donde para cada nodo (node o const_node), su representación interna no será mas que un puntero a la celda del árbol a la que apunta, diferenciándose en el tipo de operaciones (especificación) que permiten realizar sobre el mismo (ver documentación asociada). 
+
+Si consideramos los iteradores, esto es, 
+
+\li ktree<T,K>::node::child_iterator -> Iterador sobre los hijos no nulos de un nodo
+\li ktree<T,K>::const_node::child_iterator -> Iterador sobre los hijos no nulos de un nodo constante
+
+Ambos iteradores tienen una representación un poco más compleja, al considerar tanto el nodo sobre el que queremos iterar como  el hijo en el que ubica  en este momento. 
+
+La siguiente imagen ilustra la representación interna del ktree.
+
+\image html ktree_estructura.jpg
+\image latex ktree_estructura.pdf "Atributos de la clase ktree" width=10cm
+
+\section ktreegen Representando un Nmer como un ktree
+
+\subsection rep Representación
+
+Podemos representar todos los Nmer hasta una determinada longitud mediante un ktree. Para ello,  en cada nodo se almacenará un char que representa a una base (A,G,C,T), excepto el nodo raíz que almacena un char nulo, por ejemplo '-'. 
+
+El camino que existe desde la raíz del ktree hasta un nodo n  en el nivel l codificará una subsecuencia de bases consecutivas en la cadena de tamaño l.  
+Por ejemplo, supongamos la cadena  "ATACATCATTGTGG".  Las distintas subsecuencias (de tamaños 1 a 3) que nos pueden aparecer son: 
+
+\li Tamaño 1: A; G; C; T
+\li Tamaño 2: AC; AT; GG; GT; CA; TA; TG; TC; TT
+\li Tamaño 3: ACA; ATA; ATC; ATT; GTG; CAT; TAC; TGG; TGT; TCA; TTG 
+
+Por tanto, cada nodo del árbol tendrá como máximo 4 descendientes director (hijos) que representan las posibles bases que pueden aparecer en la cadena para formar las  subsecuencias de tamaño l+1, asociando cada uno a una base  distinta de la siguiente forma
+
+\li  A -> hijo 0
+
+\li G -> hijo 1
+
+\li C-> hijo 2
+
+\li T-> hijo 3
+
+No olvidemos  que, además de identificar las subsecuencias, estamos interesados el contar el número de veces que se repita cada una de ellas en la cadena. Para ello, es suficiente con incluir también en cada nodo del árbol un valor entero que codifique dicha información. Así, la clase Nmer se puede representar como se indica:
+
+\code
+class Nmer {
+  public:
+    Nmer();
+    ....
+  private:
+    ktree<pair<char,int>,4> el_Nmer; // subsecuencias 
+    int max_long; // Mayor longitud de la cadena representada, esto es, el nivel máximo del árbol
+  
+
+};
+\endcode
+
+
+La siguiente figura muestra un subconjunto del árbol para una longitud de subcadena máxima de 3 (max_long = 3) que se obtiene cunado consideramos la cadena "ATACATCATTGTGG", la lista todas las posibles subcadenas (junto a su frecuencia es: A 4; AC 1; ACA 1; AT 3; ATA 1; ATC 1; ATT 1; C 2;
+CA 2; CAT 2; G 5; GG 2; GT 1; GTG 1; T 5; TA 1; TAC 1; TC 1; TCA 1; TG 2; TGG 1; TGT 1; TT 1; TTG 1).
+
+\image html ktree_cadena.jpg
+\image latex ktree_cadena.pdf "Cadena de ADN <ATACATCATTGTGG> representada como un ktree" width=10cm
+
+\section otrosMetodos ¿Cómo implementar algunos de los métodos en Nmer?
+
+En esta sección presentaremos con mas detalle el comportamiento de algunos de los métodos de la clase Nmer que hay que implementar. Estos métodos permiten abordar distintos problemas de interés en genética computacional. Recordemos que son los métodos:
+
+\code
+class Nmer {
+  ...
+
+  public:
+
+   void sequenceADN(unsigned int tama, const string & adn);  // Construir Nme a partir de cadena de ADN
+
+   bool loadSerialized(const string nombre_fichero); // Leer fichero serializado que representa a un Nmer 
+
+   set<pair<string,int>,OrdenCre > rareNmer(int threshold); // devuelve la lista de todas las subcadenas (no prefijo) que  aparecen menos de threshold veces en el Nmer ordenadas en orden creciente de frecuencia
+
+   set<pair<string,int>,ordenDecre > commonNmer(int threshold); // Devuelve la lista de las cadenas de longitud mayor posible (no prefijo)  que aparecen más de threshold veces en el Nmer, ordenadas en orden decreciente de frecuencia
+  
+   set<pair<string,int>, ordenCrec > level(int l); // Devuelve el conjunto de Nmers de longitud exacta l.
+
+   float  Distance(const Nmer & x);  // Distancia entre  dos Nmer
+
+  ...
+}
+\endcode
+
+El alumno podrá dotar al tipo de dato de otros métodos que considere necesarios para la correcta realización de la práctica, pero debe respetar escrupulosamente la cabecera de los métodos detallados anteriormente.
+ 
+
+\subsection crear Método 1 ->  Nmer::sequenceADN(tama, adn) : Obteniendo los Nmers a partir de una cadena de ADN
+
+El primer problema que nos tendremos que plantear a la hora de solucionar la práctica es el poder construir el ktree que representa los distintos Nmers. Como ya hemos comentado, utilizaremos un ktree con valor k=4, donde en cada nodo almacenamos no sólo la base, sino también su frecuencia dentro de la cadena de ADN. En cierto sentido, el nodo en el nivel i-ésimo representa un Nmer de longitud i (dicho Nmer se obtiene al considerar, en orden inverso, el camino que hay desde dicho nodo a la raíz del árbol). Recordad que  en cada nodo almacenamos no sólo la base, sino también el contador que nos indica las ocurrencias del Nmer que representa el nodo en la secuencia de ADN.
+
+En esta sección trataremos de ilustrar de forma detallada cómo podemos construir a partir de la secuencia el árbol de Nmers, esto es, nuestro ktree. Para ello consideraremos dos métodos, el primero, sequenceADN,  que se encarga de recorrer la cadena de ADN para extraer una a una todas las subcadenas de longitud tama de que se extraen los distintos Nmers a insertar, y el segundo es un método privado, insertar_cadena, que dada una subsecuencia de tamaño tama  se encarga de insertar los "tama" Nmers, subsecuencias  que empiezan en cadena[0] y con  longitud 1 hata cadena.size(),   en el árbol. 
+
+Por ejemplo, si adn = "ATACATCATTGTGG" y tama es 6, sequenceADN extraería las subsecuencias
+
+- "ATACAT"
+- "TACATC"
+- "ACATCA"
+- "CATCAT"
+- ...
+
+En pseudo-código, sequenceADN podría implementarse como sigue
+
+\code
+void Nmer::sequenceADN(unsigned int tama, const string & adn){
+
+Inicializamos el árbol poniendo la  etiqueta ('-',0) en el nodo raíz 
+
+    Para cada uno de las posiciones, i,  de la cadena {
+       Obtenemos un substring de tamaño tama que empiece en adn[i];
+       insertar_cadena(subcadena);
+     }
+}
+\endcode
+
+Si nos centramos en cada una de las cadenas, insertar_cadena permite considerar los Nmers que empiezan en cadena.begin(). Por ejemplo, considerando un tamaño hasta 6, los distintos Nmers para "ATACAT" son:
+
+-# "A"
+-# "AT"
+-# "ATA"
+-# "ATAC"
+-# "ATACA"
+-# "ATACAT"
+
+El esquema del algoritmo insertar_cadena es el siguiente:  avanzar por la cadena a la vez que descendemos por el árbol para actualizar los valores del Nmer que representa, como indica el siguiente pseudo-código:
+
+\code
+void insertar_cadena(const string & cadena){
+
+posicionamos un nodo, n_act, en la raiz del arbol.
+
+ //Este nodo n lo utilizamos para descender por el arbol
+// cadena[i] nos indica el índice del nodo en el  nivel i+1;
+// A -> hijo 0; G -> hijo 1; C-> hijo 2; T-> hijo 3
+
+ Para cada uno de los caracteres, i, de la cadena {
+    cadena[i] nos indica el índice del nodo en el  nivel i+1;
+    // si cadena[i] es : A -> hijo 0; G -> hijo 1; C-> hijo 2; T-> hijo 3
+    si n_act tiene hijo en la posición dada por cadena[i] { // Ya esta insertado el nodo
+      incrementamos el contador en 1;
+    }
+    en caso contrario { //  No esta insertado el nodo
+        insertamos el nuevo nodo en dicha posición con etiqueda cadena[i] y su contador a 1;
+    }
+   descendemos en el árbol, haciendo que n_act sea el nodo que representa cadena[i], esto es bajamos al hijo correspondiente;
+ }
+
+}
+\endcode
+
+
+Para finalizar, os entregamos el código que nos recorre el ktree en preorden, donde por ejemplo la acción sobre el hijo podría ser obtener el Nmer que representa el nodo. En este algoritmo, n será el nodo a partir del cual queremos realizar el recorrido en preorden:
+
+ \code
+void recorrido_preorden( ktree<pair<char,int>,4>::node  n){
+
+if (!n.null()){
+   < accion sobre el nodo n >
+   for ( ktree<base,4>::node hijo : n)
+     recorrido_preorden(hijo);
+  }
+}
+\endcode
+
+\subsection load Método 2 ->  Nmer::loadSerialized(nombre)
+
+Por si el alumno tiene problema en la construcción del Nmer, se entrega este método ya implementado que a partir de un fichero serializado, con extensión .srl, y nos reconstruye el ktree que lo generó.  Con la práctica se entregan algunos ejemplos de ficheros serializdos  que podrán ser utilizados por el alumno para obtener distintos  Nmers válidos, como por ejemplo cadenaSimple.srl, cadenabosTaurus.srl o cadenamusMusculus.srl. 
+
+Por tanto podremos utilizar este método para ir avanzando en la implementación de los otros métodos de la clase aun cuando no tengamos implementado el método que a partir de una cadena extree  los Nmers, esto es, sequenceADN.
+
+Un ejemplo de cómo poder utilizar este método lo lo podemos encontrar en  el fichero ejemploKtree.cpp:
+
+\code
+Nmer prueba;
+prueba.loadSerialized("cadenaSimple.srl");
+cout << prueba.length(); // devuelve 3
+cout << prueba.size(); // devuelve 24
+prueba.list_Nmer();  // Listaria todos los Nmers (desde longitud 1 hasta longitud prueba.length()
+\endcode
+ 
+Sólo a nivel informativo, indicar que para  poder reconvertir el fichero serializado  necesitamos de un functor que nos permita transformar un string del tipo "A 45" o "x -1", donde el primer elemento de la cadena es un char y el segundo un entero, en un objeto de tipo pair<char,int>. Dicho functor, se encuentra dentro de la parte privada de la clase Nmer con el nombre String2Base.  
+
+El código para loadSerialized (ya incluido en el <tt>Nmer.cpp</tt>) es el siguiente:
+
+
+\code
+bool Nmer::loadSerialized(const string & fichero) {
+ string cadena;
+ ifstream fe;
+ pair<char,int> nulo('x',-1);
+ Nmer::String2Base stb;
+ 
+ fe.open(fichero.c_str(), ifstream::in);
+   if (fe.fail()){
+     cerr << "Error al abrir el fichero " << fichero << endl;
+   } 
+   else {
+    //leo la cabecera del fichero (líneas que comienzan con #)
+    do{ 
+      getline(fe,cadena,'\n'); 
+    } while (cadena.find("#")==0 && !fe.eof());
+    // leemos Nmer_length
+     max_long = std::stoi(cadena);
+     // leemos cadena serializada
+    getline(fe,cadena,'\n');
+    el_Nmer.deserialize(cadena,nulo,';',stb); 
+    fe.close();
+    return true;
+  } // else
+  fe.close();
+  return false;
+ }
+\endcode
+
+\subsection rare Método 3 -> set<pair<string,int>,OrdenCre > Nmer::rareNmer(threshold)
+
+Este método devuelve la lista de todas las subcadenas (no prefijo) que  aparecen un número menor o igual a threshold veces en el Nmer. Estas cadenas  se almacenarán en el primer campo del par, mientras que en el segundo dispondremos de la frecuencia de aparición en la cadena de ADN de dicho Nmer. EL conjunto deberá estar  ordenado en orden creciente de frecuencia, esto es las cadenas (por ejemplo, esto se utiliza para buscar peculiaridades en la secuencia de ADN).
+
+<bf>¿Qué es una cadena prefijo?:</bf>  decimos que una cadena, x, es prefijo de otra, y, si x está completamente incluida en y empezando desde el principio. Por ejemplo x="abcde" es prefijo de "abcdefg" pero no lo es de "sabcdefg".
+
+Por tanto, si realizamos una llamada al método rareNmer(4), esto es threshold es 4, y encontramos que el Nmer "AC" aparece 5 veces, Nmer "ACG" aparece 4 veces, el Nmer "ACGG" aparece 2 y "ACGT" aparece 1, como salida  sólo nos debería devolver "ACGG" y "ACGT", pues "ACG", aun teniendo una frecuencia menor o igual que el threshold 4,  es prefijo de al menos otra cadena de longitud mayor. 
+
+
+\subsection common Método 4 ->  set<pair<string,int>,ordenDecre > commonNmer(threshold)
+
+Devuelve la lista de las cadenas de longitud mayor posible (sin ser prefijo)  que aparecen un número de veces mayor que de threshold veces en el Nmer, ordenadas en orden decreciente de frecuencia (se utiliza para buscar repeticiones mas comunes, por ejemplo cuando tratamos de comprimir una cadena de ADN). Al igual que antes, el conjunto de cadenas deberá estar ordenado, pero en este caso en orden decreciente, esto es, aparecen primero las maś frecuentes 
+
+Por ejemplo, si consideramos que un Nmer contiene a "AC" que aparece 5 veces, a "AT" que aparece 5 veces, a "ACG" que aparece 4 veces,  "ACT" que aparece 4 veces,  "ATG" que aparece 3 veces  "ACGG" que aparece 2 y "ACGT" que aparece 1, una llamada a  <tt>commonNmer(3)</tt> dará como salida "AT", "ACG" y "ACT". En este caso "AC", aun teniendo una frecuencia mayor que el threshold 4,  es prefijo de al menos otra cadena de longitud mayor. 
+
+\subsection level Método 5 -> set<pair<string,int>, ordenCrec > level(l);
+
+Este método nos devuelve únicamente los Nmers de longitud l, ordenados en orden creciente de frecuencia. 
+
+
+Por ejemplo, si consideramos que un Nmer contiene a "AC" que aparece 5 veces, a "AT" que aparece 5 veces, a "ACG" que aparece 4 veces,  "ACT" que aparece 4 veces,  "ATG" que aparece 3 veces  "ACGG" que aparece 2 y "ACGT" que aparece 1, una llamada a  <tt>level(3)</tt> dará como salida  "ATG", "ACG" y  "ACT" y , con frecuencia 3, 4 y 4, respectivamente.
+
+
+\subsection problemaBiologia Método 6 -> float Distance(Nmer) : Aplicación del TDA Nmer a la caracterización del genoma de distintas especies. 
+
+Una vez programado el TDA Nmer descrito en las secciones anteriores, proponemos que el estudiante aplique este TDA a un problema real: la identificación de especies en base a los Nmers de una secuencia de ADN. Para ello, se proporciona al estudiante extractos reales de longitud 10.000 de cadenas de ADN del genoma de 10 especies animales (ficheros <tt>datos/1.txt</tt>, <tt>datos/2.txt</tt>, ..., <tt>datos/10.txt</tt>). El estudiante debe construir un objeto Nmer para representar cada una de estas 10 secuencias de ADN. Una vez creados los Nmers, el estudiante deberá implementar una métrica para medir la distancia entre estos Nmers para identificar cuáles son las cadenas más parecidas entre sí. El fichero <tt>datos/genomas disponibles.txt</tt> muestra a qué especie corresponde cada cadena de ADN. Si los métodos están bien implementados y el tamaño de N es suficientemente elevado (recomendamos probar valores de N>=10), los resultados deben ir acordes a la distancia evolutiva entre las especies [3]: por ejemplo, las cadenas humanas serán más parecidas entre sí o a las de ratón que a las de gusano. En cualquier caso, nuestros resultados pueden fluctuar dado que estamos considerando extractos de longitud reducida (10.000 bases es un tamaño reducido dado el tamaño total de los genomas considerados). 
+
+
+\subsubsection dist Cálculo de la Distancia
+
+En esta sección detallaremos cómo se calcula la distancia entre dos Nmers. Para ello consideremos el siguiente ejemplo donde trataremos de buscar la distancia entre los Nmers, nmX e nmY, asociados a considerar dos cadenas de ADN, adnX y adnY, respectivamente. Ilustraremos cómo sería al proceso para calcular 
+\code
+nmX.distance(nmY);
+\endcode
+
+En nuestro caso asumiremos que ambos datos tienen como longitud máxima 2 (presentados  como una secuencia de pares Nmer=frecuencia). 
+
+\li nmX:  (A=690) (G=1019) (C=818) (T=694) (AA=199) (AG=282) (AC=99) (AT=109) (GA=257) (GG=372) (GC=231) (GT=159) (CA=153) (CG=162) (CC=284) (CT=219) (TA=81) (TG=202) (TC=204) (TT=207)  
+\li nmY: (A=985) (G=1202) (C=1262) (T=991) (AA=270) (AG=341) (AC=219) (AT=155) (GA=261) (GG=423) (GC=300) (GT=217) (CA=349) (CC=456) (CT=386) (TG=367) (TC=286) (TT=233) 
+
+El primer paso consiste en ordenar los distintos Nmers de forma que los más frecuentes ocupen las primeras posiciones en el orden. Una alternativa para abordar este problema es utilizar un contenedor asociativo, tipo set, que almacene cada uno de los pares pero considerando como criterio de comparación el de mayor frecuencia.  Como resultado tendríamos este secuencia de elementos (Nmer frecuencia).
+
+\li nmX: G 1019;C  818;T 694;A 690;GG 372;CC 284;AG 282;GA 257;GC 231;CT 219;TT 207;TC 204;TG 202;AA 199;CG 162;GT 159;CA 153;AT 109;AC 99;TA 81;
+\li nmY: C 1262;G 1202;T 991;A 985;CC 456;GG 423;CT 386;TG 367;CA 349;AG 341;GC 300;TC 286;AA 270;GA 261;TT 233;AC 219;GT 217;AT 155;
+
+Iterando sobre este contenedor es fácil asociar a cada Nmer su posición en el ranking. Así para adnX el Nmer G tendrá valor 1, Nmer C tendrá valor 2, Nmer T será 3, ... Esto es,
+
+
+\li rankingX: G 1; C 2; T 3; A 4; GG 5; CC 6; AG 7; GA 8; GC 9; CT 10; TT 11; TC 12; TG 13; AA 14; CG 15; GT 16; CA 17; AT 18; AC 19; TA 20;
+\li rankingY: C 1; G 2; T 3; A 4; CC 5; GG 6; CT 7; TG 8; CA 9; AG 10; GC 11; TC 12; AA 13; GA 14; TT 15; AC 16; GT 17; AT 18; 
+
+
+Una vez que tenemos este ranking podremos proceder a calcular la distancia teniendo en cuenta la distancia entre las posiciones en cada ranking. Así, por ejemplo G está a distancia 1 (diferencia entre 1 y 2), T está a distancia 0, TG está a distancia 5 (diferencia entre 13 y 8), ... y finalmente si consideramos tanto CG como TA diremos que están a distancia máxima (definida como la distancia máxima posible entre los rankings) ya que ambos Nmers no se encuentran en el rankingY.
+
+Finalmente indicar que estas distancias (normalizadas) son acumuladas, devolviendo el promedio
+
+El siguiente pseudo código nos permite computar dicha distancia:
+\code
+max <- maximo(rankingX.size(),rankingY.size());
+dist <- 0;
+Para cada Nmer n en rankingX {
+  Si (n pertenece a rankingY) {
+	posX <- la posicion de n en rankingX
+  	posY <- la posicion de n en rankingY;
+        valor = abs(posX-posY)/max
+  } else valor = 1;
+  dist+=valor;
+ } 
+return dist/rankingX.size() // calculamos el promedio, tomando  valores en [0,1]
+\endcode
+
+Finalmente, indicar que la distancia, tal y como está definida no es simétrica, esto es nmX.distance(nmY) != nmY.distance(nmX)
+
+
+
+\section entrega Entrega
+
+El alumno debe empaquetar todos los archivos relacionados con el proyecto en un archivo con nombre "genData.zip". 
+Tenga en cuenta que no se incluirán ficheros objeto, ni ejecutables. Es recomendable que haga una "limpieza" para eliminar los archivos temporales o que se puedan generar a partir de los fuentes.
+
+El alumno debe incluir un fichero con un main <tt>src/ejemploNmer.cpp</tt> que exhiba toda la funcionalidad programada para el TDA Nmer, incluyendo el cálculo de las distancias entre las 10 secuencias de distinta especie (<tt>datos/1.txt, datos/2.txt</tt>, etc).
+
+El alumno ya tiene disponible un fichero Makefile para realizar la compilación. Conviene estudiar con detalle este fichero y sus distintas opciones: 
+ - <tt>make</tt> para generar los ejecutables
+ - <tt>make documentacion</tt> para generar la documentación en la carpeta <tt>doc/html</tt> y <tt>doc/latex</tt>
+ - <tt>make clean</tt> para eliminar ficheros temporales y objeto. 
+
+El alumno debe actualizar este fichero para compilar los nuevos módulos generados. 
+
+Tenga en cuenta que los archivos deben estar distribuidos en directorios:
+
+genData.zip
+\li Makefile 
+\li include -- Carpeta con ficheros de cabecera (.h)
+\li src --Carpeta con código fuente (.cpp)
+\li doc --Carpeta con Documentación
+\li obj -- Carpeta para código objeto (.o)
+\li lib -- Carpeta para bibliotecas (.a)
+\li bin -- Carpeta para ejecutables
+\li datos -- Carpeta para ficheros de datos
+
+La fecha límite de entrega es el día 25 de Enero de 2017 a las 23:59.
+
+\section bibliografia Bibliografía
+
+[1] k-mer en wikipedia: https://en.wikipedia.org/wiki/K-mer  
+
+[2] Genomic DNA k-mer spectra: models and modalities. (2009) Benny Chor et al. Genome Biol. 10(10): R108.
+
+[3] https://genome-euro.ucsc.edu/cgi-bin/hgGateway
+
+*/
+
